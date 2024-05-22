@@ -9,8 +9,8 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// Fetch available cases where lawyer_id is null
-$sql = "SELECT * FROM consultation WHERE lawyer_id IS 0";
+// Fetch available cases where lawyer_id is 0
+$sql = "SELECT * FROM consultation WHERE lawyer_id = 0";
 $result = mysqli_query($conn, $sql);
 
 // Check if there are available cases
@@ -30,10 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $row = mysqli_fetch_assoc($user_result);
     $lawyer_id = $row['referenced_id'];
 
-    // Insert consultation into the database
-    $sql = "INSERT INTO consultation (client_id, lawyer_id, cases, consultation) VALUES ('$client_id', '$lawyer_id', '$cases', '$consultation')";
+    // Update consultation in the database for the selected case
+    $sql = "UPDATE consultation SET lawyer_id = '$lawyer_id', consultation = '$consultation' WHERE client_id = '$client_id' AND lawyer_id = 0";
     if (mysqli_query($conn, $sql)) {
-        echo "<script>alert('Consultation submitted successfully.')</script>";
+        echo "<script>alert('Consultation updated successfully.')</script>";
     } else {
         echo "Error: " . $sql . "<br>" . mysqli_error($conn);
     }
@@ -46,15 +46,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultation</title>
-        <style type="text/css">
+    <style type="text/css">
         @font-face {
-          font-family: "Poppins-Regular";
-          src: url("../../fonts/poppins/Poppins-Regular.ttf");
+            font-family: "Poppins-Regular";
+            src: url("../../fonts/poppins/Poppins-Regular.ttf");
         }
 
         @font-face {
-          font-family: "Poppins-SemiBold";
-          src: url("../../fonts/poppins/Poppins-SemiBold.ttf");
+            font-family: "Poppins-SemiBold";
+            src: url("../../fonts/poppins/Poppins-SemiBold.ttf");
         }
         body {
             margin: 0;
