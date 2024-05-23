@@ -5,7 +5,6 @@ if (!isset($_SESSION['user_info']['username'])) {
     exit;
 }
 
-
 // Database connection
 $conn = mysqli_connect("localhost", "root", "", "olcs");
 
@@ -14,16 +13,19 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Handle form submission
-    $username = $_SESSION['user_info']['username'];
-    
-    // Fetch the referenced_id associated with the username
-    $query = "SELECT referenced_id FROM users WHERE username = '$username'";
-    $user_result = mysqli_query($conn, $query);
-    $row = mysqli_fetch_assoc($user_result);
-    $client_id = $row['referenced_id'];
-    
+$username = $_SESSION['user_info']['username'];
+
+// Fetch the referenced_id associated with the username
+$query = "SELECT referenced_id FROM users WHERE username = '$username'";
+$user_result = mysqli_query($conn, $query);
+if (!$user_result || mysqli_num_rows($user_result) == 0) {
+    die("User not found or query failed: " . mysqli_error($conn));
+}
+$row = mysqli_fetch_assoc($user_result);
+$client_id = $row['referenced_id'];
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['case'])) {
+    // Handle new case submission
     $case = mysqli_real_escape_string($conn, $_POST['case']);
 
     // Insert case into the database
@@ -34,6 +36,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo "Error: " . $sql . "<br>" . mysqli_error($conn);
     }
 }
+
+// Fetch cases for the dropdown
+$cases_query = "SELECT consultation_id, cases FROM consultation WHERE client_id = '$client_id'";
+$cases_result = mysqli_query($conn, $cases_query);
+
+// Handle fetching of consultation details
+$selected_case = null;
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['selected_case_id'])) {
+    $selected_case_id = mysqli_real_escape_string($conn, $_POST['selected_case_id']);
+    $consultation_query = "SELECT consultation FROM consultation WHERE consultation_id = '$selected_case_id'";
+    $consultation_result = mysqli_query($conn, $consultation_query);
+    if ($consultation_result && mysqli_num_rows($consultation_result) > 0) {
+        $selected_case = mysqli_fetch_assoc($consultation_result)['consultation'];
+    } else {
+        $selected_case = "No case details found for the selected case.";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -42,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultation</title>
-        <style type="text/css">
+    <style type="text/css">
         @font-face {
           font-family: "Poppins-Regular";
           src: url("../../fonts/poppins/Poppins-Regular.ttf");
@@ -126,6 +145,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             height: 2px;
             background-color: black;
         }
+
         form {
             max-width: 600px;
             margin: 0 auto;
@@ -142,7 +162,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         select,
         textarea {
             width: 80%;
-            padding: 40px;
+            padding: 10px;
             margin: 5px 0 15px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -222,6 +242,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <textarea id="case" name="case" rows="4" cols="50" required></textarea><br><br>
         <input type="submit" value="Submit">
     </form>
+
+    <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" style="margin-top: 20px;">
+        <label for="selected_case_id">Select Case:</label><br>
+        <select id="selected_case_id" name="selected_case_id" required>
+            <option value="" disabled selected>Select a case</option>
+            <?php
+            while ($case_row = mysqli_fetch_assoc($cases_result)) {
+                echo "<option value='" . $case_row['consultation_id'] . "'>" . $case_row['cases'] . "</option>";
+            }
+            ?>
+        </select><br><br>
+        <input type="submit" value="View Case">
+    </form>
+
+    <?php
+    if ($selected_case) {
+        echo "<div style='max-width: 600px; margin: 0 auto; margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.8); border-radius: 10px;'>
+                <h3>Selected Case Details:</h3>
+                <p>$selected_case</p>
+              </div>";
+    }
+    ?>
 
     <button class="logout-btn" onclick="logout()">Logout</button>
     
