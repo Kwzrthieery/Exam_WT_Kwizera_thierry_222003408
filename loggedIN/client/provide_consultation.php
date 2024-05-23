@@ -253,7 +253,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['selected_case_id'])) {
             }
             ?>
         </select><br><br>
-        <input type="submit" value="View Case">
+        <input type="submit" value="View Consultation">
     </form>
 
     <?php
